@@ -1,7 +1,10 @@
 import numpy as np
 
+import dataGenerator
+from myParser import Edge
 
-def getIFRFromEdgesToJamFactors(numberOfEdge=6, numberOfJamFactor=4):
+
+def getIFRFromEdgesToJamFactors(numberOfEdge=7, numberOfJamFactor=4):
     jamFactorList = []
     subKernel = np.dtype([("membership_function", np.float), ("non_membership_function", np.float)])
     # jamFactorList.append(("vertices", np.int))
@@ -10,17 +13,7 @@ def getIFRFromEdgesToJamFactors(numberOfEdge=6, numberOfJamFactor=4):
         jamFactorList.append((jamLabel, subKernel))
     edgeKernel = np.dtype(jamFactorList, (4,))
     IFREdgesToJamFactors = np.zeros(numberOfEdge, dtype=edgeKernel)
-
-    IFREdgesToJamFactors = np.array([((0.8, 0.1), (0.6, 0.1), (0.2, 0.8), (0.6, 0.1)),
-                                     ((0.0, 0.8), (0.4, 0.4), (0.6, 0.1), (0.1, 0.7)),
-                                     ((0.8, 0.1), (0.8, 0.1), (0.0, 0.6), (0.2, 0.7)),
-                                     ((0.6, 0.1), (0.5, 0.4), (0.3, 0.4), (0.7, 0.2)),
-                                     ((0.8, 0.1), (0.8, 0.1), (0.0, 0.6), (0.2, 0.7)),
-                                     ((0.0, 0.8), (0.4, 0.4), (0.6, 0.1), (0.1, 0.7))],
-                                    dtype=edgeKernel)
-
-    print("IFREdgesToJamFactors")
-    print(repr(IFREdgesToJamFactors))
+    IFREdgesToJamFactors = dataGenerator.getVirtualEdgesToJamFactors(edgeKernel, numberOfEdge, numberOfJamFactor)
     return IFREdgesToJamFactors
 
 
@@ -31,6 +24,11 @@ def geJamFactorstoCostFactors(numberOfJamArea=4, numberOfCostFactor=4):
 
 
 def initJamFactorstoCostFactorsData(jamCosts):
+    """
+    Gía trị ảo sinh ra để mô phỏng
+    :param jamCosts:
+    :return:
+    """
     jamCosts = np.array([[(0.4, 0), (0.7, 0), (0.3, 0.3), (0.1, 0.7)],
                          [(0.3, 0.5), (0.2, 0.6), (0.6, 0.1), (0.2, 0.4)],
                          [(0.1, 0.7), (0, 0.9), (0.2, 0.7), (0.8, 0)],
@@ -52,25 +50,19 @@ def getEdgesToCostFactorsMatrix(numberOfEdges=6, numberOfCostFactor=4):
 
 
 def calculateEdgesToCostFactors(EdgeToJamFactor, jamCosts):
-    result = getEdgesToCostFactorsMatrix(numberOfEdges=6, numberOfCostFactor=4)
-    print("Matrix T: ")
-    print(repr(result))
+    result = getEdgesToCostFactorsMatrix(numberOfEdges=EdgeToJamFactor.shape, numberOfCostFactor=4)
+
     for costFactorIndex, costFactor in enumerate(jamCosts.T):
 
         for edgeIndex, edge in enumerate(EdgeToJamFactor):
-            print(edge)
+
             u = []
             v = []
             for jamIndex, jamFactor in enumerate(edge):
-                print("uQ: ", end='')
-                print(jamFactor)
-                print("uR: ", end='')
-                print(jamCosts[jamIndex, costFactorIndex])
                 u.append(min(jamFactor[0], jamCosts[jamIndex, costFactorIndex][0]))
                 v.append(max(jamFactor[1], jamCosts[jamIndex, costFactorIndex][1]))
             maxU = max(u)
             minV = min(v)
-            print(maxU, minV)
             result[edgeIndex][costFactorIndex] = (maxU, minV)
     return result
 
@@ -84,16 +76,16 @@ def calculateJam(edge):
     pass
 
 
-def getJamCost(edgesToCostFactor, distance):
+def getJamCost(edgesToCostFactor, edges: Edge):
     finalDistance = []
     jamMatrix = []
     for edgeIndex, edge in enumerate(edgesToCostFactor):
         jams = calculateJam(edge)
         jamMatrix.append(jams)
-        temp =0
+        temp = 0
         for jam in jams:
-            temp = temp + distance[edgeIndex] * jam
-        finalDistance.append(np.round(temp,3))
+            temp = temp + edges[edgeIndex].distance * jam
+        finalDistance.append(np.round(temp, 3))
     return jamMatrix, finalDistance
     pass
 
@@ -108,18 +100,22 @@ def getDistance(numberOfEdges):
     return dist
 
 
+def calculateNewDistanceCost(edges: Edge, ):
+    """
+    Import module core thì chỉ chạy hàm này
+    :return:
+    """
+    edgeToJamFactors = getIFRFromEdgesToJamFactors(len(edges))
+    jamFactorsToCostFactors = initJamFactorstoCostFactorsData(geJamFactorstoCostFactors(4, 4))
+    edgesToCostFactor = calculateEdgesToCostFactors(edgeToJamFactors, jamFactorsToCostFactors)
+
+    (jamCostofEdges, finalDistance) = getJamCost(edgesToCostFactor, edges)
+    for idx,edge in enumerate(edges):
+        edge.setNewDistance(finalDistance[idx])
+    return edges, edgeToJamFactors
+    pass
+
+
 if __name__ == '__main__':
     # Determination of edges that have jam factors.
-    edgeToJamFactor = getIFRFromEdgesToJamFactors()
-    jamFactorstoCostFactors = initJamFactorstoCostFactorsData(geJamFactorstoCostFactors(4, 4))
-    edgesToCostFactor = calculateEdgesToCostFactors(edgeToJamFactor, jamFactorstoCostFactors)
-    # Sinh dữ liệu khoảng cách ảo
-    distance = getDistance(6)
-
-    (jamCostofEdges, finalDistance) = getJamCost(edgesToCostFactor, distance)
-    print("jamCostofEdges")
-    print(jamCostofEdges)
-    print("finalDistance")
-    print(finalDistance)
-    print(sum(distance))
-    print(sum(finalDistance))
+    pass
