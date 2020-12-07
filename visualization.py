@@ -2,12 +2,13 @@ import numpy as np
 from tkinter import *
 from graphics import *
 
+
 class Visualization:
     width = 800
     height = 600
     panel_width = 200
     numberOfVertex = 5
-    window = GraphWin("graph", width, height)
+    window = GraphWin("graph", width, height, autoflush=False)
     jams_color = np.full((5, 5), 255)
     node_info = [('A', 0, 50, 50), ('B', 1, 200, 50), ('C', 2, 400, 200), ('D', 3, 50, 400), ('E', 4, 200, 400)]
     panel_padding = 2
@@ -18,7 +19,7 @@ class Visualization:
         self.matrix = matrix
         self.jams = jams
 
-    def drawGraph(self,matrix, n):
+    def drawGraph(self, matrix, n):
         jams_color = np.full((5, 5), 255)
 
         for x in self.node_info:
@@ -32,14 +33,20 @@ class Visualization:
             # draw edge, distance cost
             i = x[1]
             for j in range(n):
-                if i != j and matrix[i][j] < 1000:
-                    line = Line(Point(self.node_info[i][2], self.node_info[i][3]), Point(self.node_info[j][2], self.node_info[j][3]))
+                if i != j and matrix[i][j] < sys.maxsize:
+                    line = Line(Point(self.node_info[i][2], self.node_info[i][3]),
+                                Point(self.node_info[j][2], self.node_info[j][3]))
 
-                    # jam detect
-                    if self.jams[i][j][0] != -1:
-                        jams_color[i][j] = max(self.jams_color[i][j] - 255 * self.jams[i][j][1], 0)
-                        line.setWidth(5)
-                        line.setOutline(color_rgb(255, np.int32(self.jams_color[i][j]), 0))
+
+
+                      # find jam boundary of each jam
+
+
+                    # # jam detect
+                # if self.jams[i][j][0] != -1:
+                #     jams_color[i][j] = max(self.jams_color[i][j] - 255 * self.jams[i][j][1], 0)
+                #     line.setWidth(5)
+                #     line.setOutline(color_rgb(255, np.int32(self.jams_color[i][j]), 0))
 
                     line.draw(self.window)
                     text_point = Point(np.abs(self.node_info[i][2] + self.node_info[j][2]) / 2,
@@ -48,8 +55,48 @@ class Visualization:
                     text.setSize(20)
                     text.draw(self.window)
 
+        rect = Rectangle(Point(10,10), Point(240,85))
+        rect.draw(self.window)
 
-    def drawDirectionPanel(self,panel_width):
+        rect = Rectangle(Point(5,250), Point(150, 500))
+        rect.draw(self.window)
+
+        rect = Rectangle(Point(10, 360), Point(240, 435))
+        rect.draw(self.window)
+
+        rect = Rectangle(Point(330, 65), Point(450, 360))
+        rect.draw(self.window)
+
+        # jam_node = np.zeros((4, self.numberOfVertex))
+        # for u in range(0, 5):
+        #     for v in range(0, 5):
+        #         for idx, jam in enumerate(self.jams[u][v]):
+        #             if jam[0] != 0.0:
+        #                 jam_node[idx][u] = 1
+        #                 jam_node[idx][v] = 1
+        # print(jam_node)
+        #
+        # for u in range(4):
+        #     minx = sys.maxsize
+        #     miny = sys.maxsize
+        #     maxx = 0
+        #     maxy = 0
+        #     for v in range(5):
+        #         if jam_node[u][v] == 1:
+        #             if self.node_info[v][2] < minx:
+        #                 minx = self.node_info[v][2]
+        #             if self.node_info[v][3] < miny:
+        #                 miny = self.node_info[v][2]
+        #             if self.node_info[v][2] > maxx:
+        #                 maxx = self.node_info[v][2]
+        #             if self.node_info[v][3] > maxy:
+        #                 maxy = self.node_info[v][2]
+        #     # rect = Rectangle(Point(minx - 50, miny - 50), Point(maxx + 50, maxy + 50))
+        #     # rect.setFill(color_rgb(200, 10, 50))
+        #     # rect.draw(self.window)
+        #     print("min max:", minx, miny, maxx, maxy)
+
+    def drawDirectionPanel(self, panel_width):
         panel_area = Rectangle(Point(self.width - panel_width, 0), Point(self.width, self.height))
         panel_area.setFill(color_rgb(110, 119, 240))
         panel_area.setOutline("white")
@@ -70,8 +117,7 @@ class Visualization:
         text_bt_find = Text(bt_rect_find.getCenter(), "Find path")
         text_bt_find.draw(self.window)
 
-
-    def find_min(self,result_matrix, unvisited, n):
+    def find_min(self, result_matrix, unvisited, n):
         min = 1000
         index_min = unvisited[0]
         for i in unvisited:
@@ -81,7 +127,6 @@ class Visualization:
                     index_min = i
 
         return index_min
-
 
     def find_path(self, matrix, n, source, dest):
         visited = np.zeros(n)
@@ -107,8 +152,7 @@ class Visualization:
 
         return result_matrix
 
-
-    def drawResultPath(self,result_matrix, source, dest):
+    def drawResultPath(self, result_matrix, source, dest):
         current_city = dest
         prev_city = result_matrix[dest][1]
         while prev_city != source:
@@ -127,30 +171,32 @@ class Visualization:
         line.setWidth(5)
         line.draw(self.window)
 
-
-    def dijkstra(self,matrix, n):
+    def dijkstra(self, newMatrix, matrix, n):
         self.drawGraph(matrix, n)
         self.drawDirectionPanel(self.panel_width)
 
         while True:
             mouse = self.window.getMouse()
             if mouse.getX() > self.width - self.panel_width + 30 and mouse.getX() < self.width - 30 and mouse.getY() > 150 and mouse.getY() < 185:
+                for i in self.window.items[:]:
+                    i.undraw()
+                self.drawGraph(newMatrix, n)
+                self.drawDirectionPanel(self.panel_width)
                 self.window.update()
-                self.drawGraph(matrix, n)
 
                 source = ord(self.source_ibbox.getText().upper()) - 65
                 dest = ord(self.dest_ibbox.getText().upper()) - 65
                 result_matrix = self.find_path(matrix, n, source, dest)
 
                 self.drawResultPath(result_matrix, source, dest)
-
+                self.window.update()
             else:
                 mouse = self.window.getMouse()
 
 
-def draw(matrix, jams, numberOfVertex=5):
-    visualizator = Visualization(matrix, jams)
-    visualizator.dijkstra(matrix, numberOfVertex)
+def draw(newMatrix, jams, matrix, numberOfVertex=5):
+    visualizator = Visualization(newMatrix, jams)
+    visualizator.dijkstra(newMatrix, matrix, numberOfVertex)
 
 
 if __name__ == '__main__':
@@ -162,4 +208,3 @@ if __name__ == '__main__':
             [(1, 0.7, 0.12), (1, 0.7, 0.12), (-1, 0.7, 0.12), (-1, 0, 0), (-1, 0.5, 0.3)],
             [(0, 0.5, 0.3), (-1, 0.5, 0.3), (-0, 0.5, 0.3), (-1, 0.5, 0.3), (-1, 0, 0)],
             ]
-
